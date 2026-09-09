@@ -5,7 +5,6 @@ test("options page loads defaults and persists changes", async ({ context, exten
   await page.goto(`chrome-extension://${extensionId}/options.html`);
 
   await expect(page.locator("#frontendUrl")).toHaveValue("http://localhost:5173");
-  await expect(page.locator("#backendUrl")).toHaveValue("http://localhost:7001");
   await expect(page.locator("#clipboardMode")).toHaveValue("ask");
 
   await page.locator("#clipboardMode").selectOption("auto");

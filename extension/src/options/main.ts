@@ -1,7 +1,6 @@
 import { getSettings, setSettings, ExtensionSettings } from "../shared/settings";
 
 const frontendUrl = document.getElementById("frontendUrl") as HTMLInputElement;
-const backendUrl = document.getElementById("backendUrl") as HTMLInputElement;
 const sidePanelEnabled = document.getElementById("sidePanelEnabled") as HTMLInputElement;
 const clipboardMode = document.getElementById("clipboardMode") as HTMLSelectElement;
 const saveFileEnabled = document.getElementById("saveFileEnabled") as HTMLInputElement;
@@ -13,7 +12,6 @@ const savedIndicator = document.getElementById("saved-indicator") as HTMLSpanEle
 
 function populate(settings: ExtensionSettings): void {
   frontendUrl.value = settings.frontendUrl;
-  backendUrl.value = settings.backendUrl;
   sidePanelEnabled.checked = settings.sidePanelEnabled;
   clipboardMode.value = settings.clipboardMode;
   saveFileEnabled.checked = settings.saveFileEnabled;
@@ -25,7 +23,6 @@ getSettings().then(populate);
 saveButton.addEventListener("click", async () => {
   await setSettings({
     frontendUrl: frontendUrl.value,
-    backendUrl: backendUrl.value,
     sidePanelEnabled: sidePanelEnabled.checked,
     clipboardMode: clipboardMode.value as ExtensionSettings["clipboardMode"],
     saveFileEnabled: saveFileEnabled.checked,

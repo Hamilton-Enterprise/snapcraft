@@ -3,7 +3,6 @@ export type CaptureShortcutMode = "off" | "full-page" | "area";
 
 export interface ExtensionSettings {
   frontendUrl: string;
-  backendUrl: string;
   sidePanelEnabled: boolean;
   clipboardMode: ClipboardMode;
   saveFileEnabled: boolean;
@@ -12,7 +11,6 @@ export interface ExtensionSettings {
 
 export const DEFAULT_SETTINGS: ExtensionSettings = {
   frontendUrl: "http://localhost:5173",
-  backendUrl: "http://localhost:7001",
   sidePanelEnabled: true,
   clipboardMode: "ask",
   saveFileEnabled: false,
