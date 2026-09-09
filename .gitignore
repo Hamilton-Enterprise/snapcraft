@@ -27,3 +27,8 @@ walkthrough/
 
 # Superpowers scratch workspace (plans, ledgers, review packages)
 .superpowers/
+
+# Chrome extension build output and Playwright test artifacts
+extension/dist/
+extension/test-results/
+extension/playwright-report/

@@ -3,6 +3,7 @@ import { isRuntimeMessage, RuntimeMessage } from "../shared/messages";
 
 function startAreaSelection(): void {
   const overlay = document.createElement("div");
+  overlay.dataset.testid = "s2c-capture-overlay";
   overlay.style.cssText =
     "position:fixed;inset:0;z-index:2147483647;cursor:crosshair;background:rgba(0,0,0,0.15);";
   const rect = document.createElement("div");
