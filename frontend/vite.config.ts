@@ -32,9 +32,12 @@ export default ({ mode }) => {
       createHtmlPlugin({
         inject: {
           data: {
-            injectHead: process.env.VITE_IS_DEPLOYED
-              ? '<script defer="" data-domain="screenshottocode.com" src="https://plausible.io/js/script.js"></script>'
-              : "",
+            // Analytics injection removed during the Snapcraft rebrand: the
+            // previous script was hardcoded to the upstream project's own
+            // Plausible domain (screenshottocode.com) and account, which
+            // doesn't belong to this fork. Add your own analytics snippet
+            // here if you deploy this fork publicly.
+            injectHead: "",
           },
         },
       }),
