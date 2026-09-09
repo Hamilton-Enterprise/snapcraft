@@ -51,22 +51,35 @@ async function captureActiveTabFullPage(): Promise<void> {
 async function startAreaSelectionOnActiveTab(): Promise<void> {
   const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (activeTab?.id === undefined) return;
-  await chrome.tabs.sendMessage(activeTab.id, {
-    kind: "start-area-selection",
-  } satisfies RuntimeMessage);
+  await chrome.tabs
+    .sendMessage(activeTab.id, {
+      kind: "start-area-selection",
+    } satisfies RuntimeMessage)
+    .catch((error) => {
+      console.error(
+        "screenshot-to-code extension: failed to start area selection on active tab",
+        error
+      );
+    });
 }
 
 chrome.action.onClicked.addListener(() => {
-  captureActiveTabFullPage();
+  captureActiveTabFullPage().catch((error) => {
+    console.error("screenshot-to-code extension: toolbar capture failed", error);
+  });
 });
 
 chrome.commands.onCommand.addListener(async (command) => {
   if (command !== "capture-shortcut") return;
-  const settings = await getSettings();
-  if (settings.captureShortcutMode === "full-page") {
-    await captureActiveTabFullPage();
-  } else if (settings.captureShortcutMode === "area") {
-    await startAreaSelectionOnActiveTab();
+  try {
+    const settings = await getSettings();
+    if (settings.captureShortcutMode === "full-page") {
+      await captureActiveTabFullPage();
+    } else if (settings.captureShortcutMode === "area") {
+      await startAreaSelectionOnActiveTab();
+    }
+  } catch (error) {
+    console.error("screenshot-to-code extension: capture-shortcut command failed", error);
   }
 });
 
@@ -108,7 +121,16 @@ async function applyOutputs(variantIndex: number, code: string): Promise<void> {
 
 chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
   if (!isRuntimeMessage(message)) return undefined;
-  handleRuntimeMessage(message, sender).then((result) => sendResponse(result));
+  handleRuntimeMessage(message, sender)
+    .then((result) => sendResponse(result))
+    .catch((error) => {
+      console.error(
+        "screenshot-to-code extension: failed to handle runtime message",
+        message.kind,
+        error
+      );
+      sendResponse(undefined);
+    });
   return true; // keep the message channel open for the async response
 });
 
