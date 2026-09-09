@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "screenshot-to-code Quick Capture",
+  "version": "0.1.0",
+  "description": "Personal-use capture shortcut for a local screenshot-to-code instance.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "contextMenus",
+    "downloads",
+    "sidePanel",
+    "clipboardWrite"
+  ],
+  "host_permissions": ["http://localhost/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Capture for screenshot-to-code"
+  },
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "options_page": "options.html",
+  "commands": {
+    "capture-shortcut": {
+      "suggested_key": { "default": "Ctrl+Shift+K", "mac": "Command+Shift+K" },
+      "description": "Capture for screenshot-to-code (mode set in Options)"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content-capture.js"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": ["http://localhost:5173/*"],
+      "js": ["content-bridge.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
