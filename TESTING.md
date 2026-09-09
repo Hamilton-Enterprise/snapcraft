@@ -1,6 +1,6 @@
 # Testing Guide
 
-This guide explains how to run tests for the Screenshot to Code project.
+This guide explains how to run tests for the Snapcraft project.
 
 ## Backend Tests
 
