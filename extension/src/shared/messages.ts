@@ -9,7 +9,6 @@ export type RuntimeMessage =
   | { kind: "start-area-selection" }
   | { kind: "area-selected"; dataUrl: string }
   | { kind: "area-selection-cancelled" }
-  | { kind: "context-menu-capture"; dataUrl: string }
   | { kind: "variant-complete"; variantIndex: number; code: string }
   | { kind: "deliver-pending-capture" };
 
@@ -22,7 +21,6 @@ const RUNTIME_MESSAGE_KINDS: ReadonlySet<RuntimeMessage["kind"]> = new Set([
   "start-area-selection",
   "area-selected",
   "area-selection-cancelled",
-  "context-menu-capture",
   "variant-complete",
   "deliver-pending-capture",
 ]);
