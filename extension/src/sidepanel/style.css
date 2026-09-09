@@ -1,0 +1,22 @@
+/* extension/src/sidepanel/style.css */
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  padding: 12px;
+}
+#empty-state {
+  color: #6b7280;
+}
+#code {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+  background: #f3f4f6;
+  padding: 8px;
+  border-radius: 6px;
+  max-height: 80vh;
+  overflow: auto;
+}
+#copy-button {
+  margin-top: 8px;
+}
