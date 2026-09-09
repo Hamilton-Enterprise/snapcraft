@@ -23,5 +23,9 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+    environment:
+      - PROXY_CODEGEN_BACKEND=http://backend:${BACKEND_PORT:-7001}
     ports:
       - "5173:5173"
+    depends_on:
+      - backend
