@@ -73,7 +73,7 @@ function startAreaSelection(): void {
       } satisfies RuntimeMessage);
     } catch (error) {
       console.error(
-        "screenshot-to-code extension: failed to capture or crop the selected area",
+        "snapcraft extension: failed to capture or crop the selected area",
         error
       );
     }

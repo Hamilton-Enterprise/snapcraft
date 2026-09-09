@@ -14,7 +14,7 @@ function downloadBlob(blob: Blob, filename: string) {
 
 function filenameFromContentDisposition(contentDisposition: string | null) {
   const match = contentDisposition?.match(/filename="?([^"]+)"?/i);
-  return match?.[1] ?? "screenshot-to-code-export.zip";
+  return match?.[1] ?? "snapcraft-export.zip";
 }
 
 export const downloadCode = async (code: string) => {

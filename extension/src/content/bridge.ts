@@ -46,17 +46,17 @@ window.addEventListener("message", async (event: MessageEvent) => {
     try {
       await navigator.clipboard.writeText(code);
     } catch (error) {
-      console.error("screenshot-to-code extension: failed to copy code to clipboard", error);
+      console.error("snapcraft extension: failed to copy code to clipboard", error);
     }
   } else if (settings.clipboardMode === "ask") {
     const shouldCopy = window.confirm(
-      "screenshot-to-code: copy the generated code to the clipboard?"
+      "Snapcraft: copy the generated code to the clipboard?"
     );
     if (shouldCopy) {
       try {
         await navigator.clipboard.writeText(code);
       } catch (error) {
-        console.error("screenshot-to-code extension: failed to copy code to clipboard", error);
+        console.error("snapcraft extension: failed to copy code to clipboard", error);
       }
     }
   }

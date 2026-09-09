@@ -18,7 +18,7 @@ from routes.design_systems import (
 async def test_design_system_crud_persists_to_backend_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("SCREENSHOT_TO_CODE_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("SNAPCRAFT_DATA_DIR", str(tmp_path))
 
     assert await list_design_systems() == []
 

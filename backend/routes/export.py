@@ -456,7 +456,7 @@ async def export_code(request: ExportRequest) -> Response:
 
     async with httpx.AsyncClient(
         timeout=20,
-        headers={"User-Agent": "screenshot-to-code-export/1.0"},
+        headers={"User-Agent": "snapcraft-export/1.0"},
     ) as client:
         fetched_assets = await asyncio.gather(
             *[
@@ -486,6 +486,6 @@ async def export_code(request: ExportRequest) -> Response:
         content=zip_content,
         media_type="application/zip",
         headers={
-            "Content-Disposition": 'attachment; filename="screenshot-to-code-export.zip"'
+            "Content-Disposition": 'attachment; filename="snapcraft-export.zip"'
         },
     )

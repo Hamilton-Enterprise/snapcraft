@@ -13,7 +13,7 @@ from config import LOCAL_ASSET_DIR
 
 
 MAX_UPLOADED_ASSET_BYTES = 20 * 1024 * 1024
-TEMP_ASSET_DIR = os.path.join(tempfile.gettempdir(), "screenshot-to-code-assets")
+TEMP_ASSET_DIR = os.path.join(tempfile.gettempdir(), "snapcraft-assets")
 SUPPORTED_IMAGE_TYPES = {
     "image/gif": ".gif",
     "image/jpeg": ".jpg",

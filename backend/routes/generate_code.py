@@ -685,7 +685,7 @@ class AgenticGenerationStage:
                 e.message
                 + ". Please make sure you have followed the instructions correctly to obtain "
                 "an OpenAI key with GPT vision access: "
-                "https://github.com/abi/screenshot-to-code/blob/main/Troubleshooting.md"
+                "https://github.com/Hamilton-Enterprise/snapcraft/blob/main/Troubleshooting.md"
                 + (
                     " Alternatively, you can purchase code generation credits directly on this website."
                     if IS_PROD

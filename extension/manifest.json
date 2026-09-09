@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "screenshot-to-code Quick Capture",
+  "name": "Snapcraft Quick Capture",
   "version": "0.1.0",
-  "description": "Personal-use capture shortcut for a local screenshot-to-code instance.",
+  "description": "Personal-use capture shortcut for a local Snapcraft instance.",
   "permissions": [
     "activeTab",
     "storage",
@@ -17,7 +17,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Capture for screenshot-to-code"
+    "default_title": "Capture for Snapcraft"
   },
   "side_panel": {
     "default_path": "sidepanel.html"
@@ -26,7 +26,7 @@
   "commands": {
     "capture-shortcut": {
       "suggested_key": { "default": "Ctrl+Shift+K", "mac": "Command+Shift+K" },
-      "description": "Capture for screenshot-to-code (mode set in Options)"
+      "description": "Capture for Snapcraft (mode set in Options)"
     }
   },
   "content_scripts": [

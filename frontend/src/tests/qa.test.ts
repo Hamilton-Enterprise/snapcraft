@@ -395,7 +395,7 @@ async function setupRequestInterception(
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Headers": "*",
           "Content-Disposition":
-            'attachment; filename="screenshot-to-code-export.zip"',
+            'attachment; filename="snapcraft-export.zip"',
         },
         body: "mock export",
       });

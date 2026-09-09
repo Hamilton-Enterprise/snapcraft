@@ -30,8 +30,8 @@ class UpdateDesignSystemRequest(BaseModel):
 
 
 def get_design_systems_file_path() -> Path:
-    data_dir = os.environ.get("SCREENSHOT_TO_CODE_DATA_DIR")
-    base_path = Path(data_dir).expanduser() if data_dir else Path.home() / ".screenshot-to-code"
+    data_dir = os.environ.get("SNAPCRAFT_DATA_DIR")
+    base_path = Path(data_dir).expanduser() if data_dir else Path.home() / ".snapcraft"
     return base_path / "design-systems.json"
 
 

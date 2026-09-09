@@ -63,7 +63,7 @@ async function startAreaSelectionOnActiveTab(): Promise<void> {
     } satisfies RuntimeMessage)
     .catch((error) => {
       console.error(
-        "screenshot-to-code extension: failed to start area selection on active tab",
+        "snapcraft extension: failed to start area selection on active tab",
         error
       );
     });
@@ -71,7 +71,7 @@ async function startAreaSelectionOnActiveTab(): Promise<void> {
 
 chrome.action.onClicked.addListener(() => {
   captureActiveTabFullPage().catch((error) => {
-    console.error("screenshot-to-code extension: toolbar capture failed", error);
+    console.error("snapcraft extension: toolbar capture failed", error);
   });
 });
 
@@ -85,7 +85,7 @@ chrome.commands.onCommand.addListener(async (command) => {
       await startAreaSelectionOnActiveTab();
     }
   } catch (error) {
-    console.error("screenshot-to-code extension: capture-shortcut command failed", error);
+    console.error("snapcraft extension: capture-shortcut command failed", error);
   }
 });
 
@@ -111,7 +111,7 @@ chrome.contextMenus.onClicked.addListener(async (info) => {
     // reads the image). Suggest area-selection as the fallback for images
     // that fail this way.
     console.error(
-      "screenshot-to-code extension: failed to fetch image for context-menu capture " +
+      "snapcraft extension: failed to fetch image for context-menu capture " +
         "(if this is a cross-origin image with no CORS headers, try area-selection instead)",
       error
     );
@@ -136,13 +136,13 @@ async function applyOutputs(variantIndex: number, code: string): Promise<void> {
       // not prevent the download step below from running — the side panel
       // already reactively re-renders from storage.onChanged, so a user
       // who opens it manually still sees the result.
-      console.error("screenshot-to-code extension: failed to auto-open side panel", error);
+      console.error("snapcraft extension: failed to auto-open side panel", error);
     }
   }
   if (settings.saveFileEnabled) {
     await chrome.downloads.download({
       url: textToDataUrl(code, "text/plain"),
-      filename: `screenshot-to-code-variant-${variantIndex}.txt`,
+      filename: `snapcraft-variant-${variantIndex}.txt`,
       saveAs: false,
     });
   }
@@ -157,7 +157,7 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =>
     .then((result) => sendResponse(result))
     .catch((error) => {
       console.error(
-        "screenshot-to-code extension: failed to handle runtime message",
+        "snapcraft extension: failed to handle runtime message",
         message.kind,
         error
       );

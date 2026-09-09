@@ -145,7 +145,7 @@ function RunEvalsPage() {
 
   useEffect(() => {
     return () => {
-      document.title = "Screenshot to Code";
+      document.title = "Snapcraft";
       if (faviconFlashIntervalRef.current !== null) {
         window.clearInterval(faviconFlashIntervalRef.current);
       }
@@ -327,7 +327,7 @@ function RunEvalsPage() {
       setStatusMessage("Evaluation run failed");
       flashFaviconOnComplete();
       setTimeout(() => {
-        document.title = "Screenshot to Code";
+        document.title = "Snapcraft";
       }, 5000);
     } finally {
       setIsRunning(false);
