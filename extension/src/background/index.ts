@@ -14,7 +14,13 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 async function findOrOpenFrontendTab(frontendUrl: string): Promise<chrome.tabs.Tab> {
-  const tabs = await chrome.tabs.query({ url: `${frontendUrl}/*` });
+  // chrome.tabs.query's match pattern is invalid if frontendUrl has a
+  // trailing slash (e.g. "http://localhost:5173/" would produce
+  // "http://localhost:5173//*", which chrome.tabs.query rejects), so a
+  // user who saves the URL with a trailing slash in Options must not break
+  // this lookup.
+  const normalizedFrontendUrl = frontendUrl.replace(/\/+$/, "");
+  const tabs = await chrome.tabs.query({ url: `${normalizedFrontendUrl}/*` });
   if (tabs.length > 0 && tabs[0].id !== undefined) {
     await chrome.tabs.update(tabs[0].id, { active: true });
     if (tabs[0].windowId !== undefined) {
@@ -85,15 +91,31 @@ chrome.commands.onCommand.addListener(async (command) => {
 
 chrome.contextMenus.onClicked.addListener(async (info) => {
   if (info.menuItemId !== CONTEXT_MENU_ID || !info.srcUrl) return;
-  const response = await fetch(info.srcUrl);
-  const blob = await response.blob();
-  const dataUrl = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(blob);
-  });
-  await deliverCapture(dataUrl);
+  try {
+    const response = await fetch(info.srcUrl);
+    const blob = await response.blob();
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(reader.error);
+      reader.readAsDataURL(blob);
+    });
+    await deliverCapture(dataUrl);
+  } catch (error) {
+    // fetch() rejects here for a genuinely cross-origin image whose host
+    // does not send CORS headers — the same canvas/fetch same-origin
+    // policy that taints a <canvas> drawn from such an image. This is a
+    // browser platform limitation, not something this extension can work
+    // around (reading the pixels from the content script instead would
+    // hit the same tainting, since it applies regardless of which context
+    // reads the image). Suggest area-selection as the fallback for images
+    // that fail this way.
+    console.error(
+      "screenshot-to-code extension: failed to fetch image for context-menu capture " +
+        "(if this is a cross-origin image with no CORS headers, try area-selection instead)",
+      error
+    );
+  }
 });
 
 async function applyOutputs(variantIndex: number, code: string): Promise<void> {
@@ -102,9 +124,19 @@ async function applyOutputs(variantIndex: number, code: string): Promise<void> {
     latestResult: { variantIndex, code, receivedAt: Date.now() },
   });
   if (settings.sidePanelEnabled) {
-    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (activeTab?.windowId !== undefined) {
-      await chrome.sidePanel.open({ windowId: activeTab.windowId });
+    try {
+      const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (activeTab?.windowId !== undefined) {
+        await chrome.sidePanel.open({ windowId: activeTab.windowId });
+      }
+    } catch (error) {
+      // chrome.sidePanel.open() requires a user gesture, which is not
+      // present in this call chain (this runs from a runtime.onMessage
+      // handler responding to a page postMessage). A rejection here must
+      // not prevent the download step below from running — the side panel
+      // already reactively re-renders from storage.onChanged, so a user
+      // who opens it manually still sees the result.
+      console.error("screenshot-to-code extension: failed to auto-open side panel", error);
     }
   }
   if (settings.saveFileEnabled) {

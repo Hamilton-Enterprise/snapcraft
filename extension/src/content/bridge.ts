@@ -9,12 +9,18 @@ async function deliverPendingCaptureIfAny(): Promise<void> {
   const stored = await chrome.storage.local.get("pendingCapture");
   const pending = stored.pendingCapture as PendingCapture | undefined;
   if (!pending) return;
+  // postMessage delivery depends on App.tsx's useEffect listener already
+  // being attached (a real, if narrow, race with React's mount timing).
+  // Send the message BEFORE removing the only stored record of the
+  // capture, so a capture is never deleted with zero chance of recovery.
+  // This doesn't eliminate the race, but it avoids compounding it.
+  if (Date.now() - pending.createdAt <= 30_000) {
+    window.postMessage(
+      { source: EXTENSION_MESSAGE_SOURCE, type: "capture", dataUrl: pending.dataUrl },
+      window.location.origin
+    );
+  }
   await chrome.storage.local.remove("pendingCapture");
-  if (Date.now() - pending.createdAt > 30_000) return;
-  window.postMessage(
-    { source: EXTENSION_MESSAGE_SOURCE, type: "capture", dataUrl: pending.dataUrl },
-    window.location.origin
-  );
 }
 
 deliverPendingCaptureIfAny();
