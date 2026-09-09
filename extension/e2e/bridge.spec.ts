@@ -72,8 +72,10 @@ test("forwards variant-complete to the background and offers a clipboard prompt"
   expect(dialogMessage).toContain("copy the generated code");
   await expect
     .poll(async () => {
-      const stored = await background.evaluate(() => chrome.storage.local.get("latestResult"));
-      return (stored as any).latestResult?.code;
+      const stored = (await background.evaluate(() =>
+        chrome.storage.local.get("latestResult")
+      )) as { latestResult?: { code?: string } };
+      return stored.latestResult?.code;
     })
     .toBe("<p>ok</p>");
 });
