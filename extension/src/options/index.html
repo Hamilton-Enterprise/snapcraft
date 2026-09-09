@@ -1,0 +1,59 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="./style.css" />
+    <title>screenshot-to-code extension settings</title>
+  </head>
+  <body>
+    <h1>screenshot-to-code — settings</h1>
+
+    <label>
+      Frontend URL
+      <input type="text" id="frontendUrl" />
+    </label>
+    <label>
+      Backend URL
+      <input type="text" id="backendUrl" />
+    </label>
+
+    <p class="hint">
+      Changing the frontend URL's port also requires editing
+      <code>content_scripts</code> in <code>manifest.json</code> and
+      reloading the extension — see the plan's Task 2 note.
+    </p>
+
+    <label>
+      <input type="checkbox" id="sidePanelEnabled" />
+      Open the side panel with the generated code
+    </label>
+
+    <label>
+      Clipboard
+      <select id="clipboardMode">
+        <option value="off">Off</option>
+        <option value="auto">Copy automatically</option>
+        <option value="ask">Ask every time</option>
+      </select>
+    </label>
+
+    <label>
+      <input type="checkbox" id="saveFileEnabled" />
+      Save the generated code as a file
+    </label>
+
+    <label>
+      Keyboard shortcut (Ctrl/Cmd+Shift+K)
+      <select id="captureShortcutMode">
+        <option value="off">Off</option>
+        <option value="full-page">Capture full page</option>
+        <option value="area">Start area selection</option>
+      </select>
+    </label>
+
+    <button id="save">Save</button>
+    <span id="saved-indicator" hidden>Saved.</span>
+
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
