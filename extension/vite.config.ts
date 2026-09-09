@@ -24,8 +24,14 @@ function flattenHtmlOutputs(): Plugin {
           mkdirSync(outDir, { recursive: true });
           renameSync(nestedFile, flatFile);
           if (readdirSync(nestedDir).length === 0) rmdirSync(nestedDir);
-        } catch {
-          // Nothing to flatten (e.g. a partial or repeat build) — ignore.
+        } catch (err) {
+          // Only silently ignore if the nested file genuinely doesn't exist
+          // (e.g. a partial or repeat build). Let other errors propagate.
+          if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
+            // Expected case: nothing to flatten on this build
+          } else {
+            throw err;
+          }
         }
       }
     },
