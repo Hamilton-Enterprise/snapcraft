@@ -2,10 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { generateCode } from "./generateCode";
 import { AppState, AppTheme, EditorTheme, Settings } from "./types";
 import { NEW_DESIGN_SYSTEM_CONTENT } from "./lib/design-systems";
-import { IS_RUNNING_ON_CLOUD } from "./config";
-import { OnboardingNote } from "./components/messages/OnboardingNote";
 import { usePersistedState } from "./hooks/usePersistedState";
-import TermsOfServiceDialog from "./components/TermsOfServiceDialog";
 import { USER_CLOSE_WEB_SOCKET_CODE } from "./constants";
 import toast from "react-hot-toast";
 import { nanoid } from "nanoid";
@@ -761,13 +758,6 @@ function App() {
     );
   }
 
-  const handleTermDialogOpenChange = (open: boolean) => {
-    setSettings((s) => ({
-      ...s,
-      isTermOfServiceAccepted: !open,
-    }));
-  };
-
   function setStack(stack: Stack) {
     setSettings((prev) => ({
       ...prev,
@@ -812,13 +802,6 @@ function App() {
           : "min-h-screen"
       }`}
     >
-      {IS_RUNNING_ON_CLOUD && (
-        <TermsOfServiceDialog
-          open={!settings.isTermOfServiceAccepted}
-          onOpenChange={handleTermDialogOpenChange}
-        />
-      )}
-
       {/* Icon strip - always visible */}
       <div
         className="sticky top-0 z-50 lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-16 lg:flex-col"
@@ -912,12 +895,6 @@ function App() {
               </div>
             ) : (
               <>
-                {IS_RUNNING_ON_CLOUD && !settings.openAiApiKey && (
-                  <div className="px-6 mt-4">
-                    <OnboardingNote />
-                  </div>
-                )}
-
                 {(appState === AppState.CODING ||
                   appState === AppState.CODE_READY) && (
                   <Sidebar

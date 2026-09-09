@@ -340,7 +340,7 @@ function SettingsTab({ settings, setSettings, appTheme, setAppTheme }: Props) {
                 If you want to use URLs directly instead of taking the screenshot
                 yourself, add a ScreenshotOne API key.{" "}
                 <a
-                  href="https://screenshotone.com?via=screenshot-to-code"
+                  href="https://screenshotone.com"
                   className="text-violet-600 hover:text-violet-700 dark:text-violet-400 dark:hover:text-violet-300"
                   target="_blank"
                 >
