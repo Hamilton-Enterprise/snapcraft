@@ -1290,20 +1290,40 @@ git commit -m "Add extension options page"
 
 ---
 
-### Task 8: Build, load unpacked, and manual QA
+### Task 8: Build, Playwright end-to-end suite, and the residual manual checks
+
+**Revised from the original plan:** the user instructed, mid-implementation, to prefer real browser automation (Playwright) over a manual QA checklist wherever a flow can actually be driven that way. Playwright's `chromium.launchPersistentContext` supports loading an unpacked MV3 extension and reaching its service worker, options page, and side panel as real automatable targets. What Playwright cannot drive — because it lives in browser-chrome UI outside any page's DOM — is: a literal click on the toolbar action icon, selecting an item from the native right-click context menu, and the global `chrome.commands` keyboard shortcut. Those three stay a short manual list; everything else in the original checklist becomes an automated test.
 
 **Files:**
-- None created — this task builds and exercises everything from Tasks 1–7.
+- Create: `extension/playwright.config.ts`
+- Create: `extension/e2e/fixtures.ts`
+- Create: `extension/e2e/options.spec.ts`
+- Create: `extension/e2e/sidepanel.spec.ts`
+- Create: `extension/e2e/bridge.spec.ts`
+- Create: `extension/e2e/area-selection.spec.ts`
+- Modify: `extension/src/content/capture.ts` (add one `data-testid` attribute to the overlay element, purely for reliable Playwright selection — no behavior change)
+- Modify: `extension/package.json` (add `@playwright/test` devDependency and an `e2e` script)
 
-- [ ] **Step 1: Install and build**
+**Interfaces:**
+- Consumes: everything built in Tasks 1–7 as a black box, driven the way a real user/browser would — no test reaches into module internals.
+
+- [ ] **Step 1: Install dependencies and add the Playwright devDependency**
 
 ```bash
-cd extension && npm install && npm run typecheck && npm run test && npm run build
+cd extension && npm install --save-dev @playwright/test@^1.48.0 && npx playwright install chromium
+```
+
+Add to `extension/package.json`'s `"scripts"`: `"e2e": "playwright test"`, and add `"@playwright/test": "^1.48.0"` to `"devDependencies"`.
+
+- [ ] **Step 2: Typecheck, unit test, and build**
+
+```bash
+cd extension && npm run typecheck && npm run test && npm run build
 ```
 
 Expected: `typecheck` and `test` both pass (all Vitest suites from Tasks 2–3), `build` produces `extension/dist/` containing `manifest.json`, `background.js`, `content-capture.js`, `content-bridge.js`, `sidepanel.html`, `options.html` and their JS.
 
-- [ ] **Step 2: Run the frontend's own test suite once more**
+- [ ] **Step 3: Run the frontend's own test suite once more**
 
 ```bash
 cd ../frontend && npx jest
@@ -1311,33 +1331,235 @@ cd ../frontend && npx jest
 
 Expected: PASS (confirms Task 1's edit didn't regress anything).
 
-- [ ] **Step 3: Load the extension unpacked**
+- [ ] **Step 4: Add the one testability hook to `capture.ts`**
 
-In Chrome: `chrome://extensions` → enable Developer mode → "Load unpacked" → select `extension/dist`.
+In `extension/src/content/capture.ts`, inside `startAreaSelection()`, add a `data-testid` attribute to the `overlay` element right after it's created (immediately after `const overlay = document.createElement("div");`):
 
-- [ ] **Step 4: Manual QA checklist**
+```typescript
+  overlay.dataset.testid = "s2c-capture-overlay";
+```
 
-Run each of these against the already-running local instance (`docker compose up -d` in the repo root, frontend on `:5173`, backend on `:7001`):
+This is the only change to already-reviewed code in this task — it's additive, changes no behavior, and exists solely so the Playwright suite can select the overlay reliably instead of matching on inline style strings.
 
-- [ ] Toolbar icon on an arbitrary webpage → screenshot-to-code tab opens/focuses → image appears as the reference image and generation starts
-- [ ] Area selection → drag a rectangle → only that region is sent
-- [ ] Keyboard shortcut set to "Capture full page" in Options → same result as the toolbar icon
-- [ ] Keyboard shortcut set to "Start area selection" in Options → same result as the manual area-selection flow
+- [ ] **Step 5: Write the Playwright config**
+
+```typescript
+// extension/playwright.config.ts
+import { defineConfig } from "@playwright/test";
+
+export default defineConfig({
+  testDir: "./e2e",
+  fullyParallel: false,
+  workers: 1,
+  timeout: 30_000,
+  reporter: "list",
+});
+```
+
+`workers: 1` and `fullyParallel: false` because every test launches its own persistent browser profile with the extension loaded — running them concurrently would multiply Chrome instances for no benefit on a personal-use suite this size.
+
+- [ ] **Step 6: Write the shared fixture that loads the unpacked extension**
+
+```typescript
+// extension/e2e/fixtures.ts
+import { test as base, chromium, type BrowserContext } from "@playwright/test";
+import path from "node:path";
+
+export const test = base.extend<{
+  context: BrowserContext;
+  extensionId: string;
+}>({
+  // eslint-disable-next-line no-empty-pattern
+  context: async ({}, use) => {
+    const pathToExtension = path.join(__dirname, "..", "dist");
+    const context = await chromium.launchPersistentContext("", {
+      channel: "chromium",
+      args: [
+        `--disable-extensions-except=${pathToExtension}`,
+        `--load-extension=${pathToExtension}`,
+        "--headless=new",
+      ],
+    });
+    await use(context);
+    await context.close();
+  },
+  extensionId: async ({ context }, use) => {
+    let [background] = context.serviceWorkers();
+    if (!background) background = await context.waitForEvent("serviceworker");
+    const extensionId = background.url().split("/")[2];
+    await use(extensionId);
+  },
+});
+
+export const expect = test.expect;
+```
+
+Note: `--headless=new` (Chrome's new headless mode, not the legacy one) is required — legacy headless Chrome does not load extensions at all.
+
+- [ ] **Step 7: Options page round-trip test**
+
+```typescript
+// extension/e2e/options.spec.ts
+import { test, expect } from "./fixtures";
+
+test("options page loads defaults and persists changes", async ({ context, extensionId }) => {
+  const page = await context.newPage();
+  await page.goto(`chrome-extension://${extensionId}/options.html`);
+
+  await expect(page.locator("#frontendUrl")).toHaveValue("http://localhost:5173");
+  await expect(page.locator("#backendUrl")).toHaveValue("http://localhost:7001");
+  await expect(page.locator("#clipboardMode")).toHaveValue("ask");
+
+  await page.locator("#clipboardMode").selectOption("auto");
+  await page.locator("#sidePanelEnabled").uncheck();
+  await page.locator("#save").click();
+  await expect(page.locator("#saved-indicator")).toBeVisible();
+
+  await page.reload();
+  await expect(page.locator("#clipboardMode")).toHaveValue("auto");
+  await expect(page.locator("#sidePanelEnabled")).not.toBeChecked();
+});
+```
+
+- [ ] **Step 8: Side panel rendering test**
+
+```typescript
+// extension/e2e/sidepanel.spec.ts
+import { test, expect } from "./fixtures";
+
+test("side panel shows empty state, then the latest result", async ({ context, extensionId }) => {
+  const [background] = context.serviceWorkers();
+  await background.evaluate(() => chrome.storage.local.clear());
+
+  const page = await context.newPage();
+  await page.goto(`chrome-extension://${extensionId}/sidepanel.html`);
+  await expect(page.locator("#empty-state")).toBeVisible();
+  await expect(page.locator("#code")).toBeHidden();
+
+  await background.evaluate(() =>
+    chrome.storage.local.set({
+      latestResult: { variantIndex: 0, code: "<div>hello</div>", receivedAt: Date.now() },
+    })
+  );
+  await expect(page.locator("#code")).toBeVisible();
+  await expect(page.locator("#code")).toHaveText("<div>hello</div>");
+  await expect(page.locator("#empty-state")).toBeHidden();
+});
+```
+
+- [ ] **Step 9: Content bridge test (requires the local screenshot-to-code stack running)**
+
+```typescript
+// extension/e2e/bridge.spec.ts
+import { test, expect } from "./fixtures";
+
+const FRONTEND_URL = "http://localhost:5173";
+
+test("delivers a pending capture into the frontend page on load", async ({ context }) => {
+  const [background] = context.serviceWorkers();
+  await background.evaluate(() =>
+    chrome.storage.local.set({
+      pendingCapture: { dataUrl: "data:image/png;base64,AAAA", createdAt: Date.now() },
+    })
+  );
+
+  const page = await context.newPage();
+  const capturePromise = page.evaluate(() => {
+    return new Promise<{ source: string; type: string; dataUrl: string }>((resolve) => {
+      window.addEventListener("message", function handler(event) {
+        if (event.data?.source === "s2c-extension" && event.data?.type === "capture") {
+          window.removeEventListener("message", handler);
+          resolve(event.data);
+        }
+      });
+    });
+  });
+  await page.goto(FRONTEND_URL);
+  const captureMessage = await capturePromise;
+  expect(captureMessage.dataUrl).toBe("data:image/png;base64,AAAA");
+});
+
+test("forwards variant-complete to the background and offers a clipboard prompt", async ({
+  context,
+}) => {
+  const [background] = context.serviceWorkers();
+  await background.evaluate(() => chrome.storage.local.clear());
+
+  const page = await context.newPage();
+  await page.goto(FRONTEND_URL);
+
+  let dialogMessage = "";
+  page.on("dialog", (dialog) => {
+    dialogMessage = dialog.message();
+    dialog.dismiss();
+  });
+
+  await page.evaluate(() => {
+    window.postMessage(
+      { source: "s2c-app", type: "variant-complete", variantIndex: 0, code: "<p>ok</p>" },
+      window.location.origin
+    );
+  });
+
+  await expect(dialogMessage).toContain("copy the generated code");
+  await expect
+    .poll(async () => {
+      const stored = await background.evaluate(() => chrome.storage.local.get("latestResult"));
+      return (stored as any).latestResult?.code;
+    })
+    .toBe("<p>ok</p>");
+});
+```
+
+The default `clipboardMode` is `"ask"`, so `bridge.ts` calls `window.confirm(...)`, which surfaces as a Playwright `dialog` event — the test must handle it (`dismiss()`) or the page hangs waiting for a real user. Handling it here also doubles as the automated proof that clipboard mode "ask" really does prompt.
+
+- [ ] **Step 10: Area-selection overlay test**
+
+```typescript
+// extension/e2e/area-selection.spec.ts
+import { test, expect } from "./fixtures";
+
+test("area-selection overlay opens and Escape cancels it cleanly", async ({ context }) => {
+  const [background] = context.serviceWorkers();
+  const page = await context.newPage();
+  await page.goto("http://localhost:5173");
+
+  await background.evaluate(async () => {
+    const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (activeTab.id !== undefined) {
+      await chrome.tabs.sendMessage(activeTab.id, { kind: "start-area-selection" });
+    }
+  });
+
+  const overlay = page.locator('[data-testid="s2c-capture-overlay"]');
+  await expect(overlay).toBeVisible();
+
+  await page.keyboard.press("Escape");
+  await expect(overlay).toHaveCount(0);
+});
+```
+
+- [ ] **Step 11: Run the suite**
+
+```bash
+cd extension && npm run build && npm run e2e
+```
+
+`bridge.spec.ts` and `area-selection.spec.ts` need the screenshot-to-code stack up first: `docker compose up -d` from the repo root (frontend `:5173`, backend `:7001`). `options.spec.ts` and `sidepanel.spec.ts` don't need it.
+
+Expected: all Playwright tests pass.
+
+- [ ] **Step 12: The residual manual checks**
+
+Only these three, because Playwright cannot drive browser-chrome UI outside a page's DOM:
+
+- [ ] Click the toolbar icon on an arbitrary webpage → screenshot-to-code tab opens/focuses → image appears and generation starts
 - [ ] Right-click an `<img>` on any page → "Generate code from this image" → that exact image is delivered, no new screenshot taken
-- [ ] With "Open the side panel" enabled: panel shows the final code after generation completes
-- [ ] With "Open the side panel" disabled: panel does not auto-open
-- [ ] Clipboard mode "auto": code is on the clipboard immediately after generation, no prompt
-- [ ] Clipboard mode "ask": a confirm dialog appears; accepting copies, declining does not
-- [ ] Clipboard mode "off": no dialog, nothing copied
-- [ ] "Save as file" enabled: a `.txt` file download appears after generation
-- [ ] Stop the backend container (`docker compose stop backend`) and repeat the toolbar-icon capture: the screenshot-to-code tab itself should show its own "could not connect" state (existing app behavior) rather than the extension silently doing nothing — confirm no extension-side crash in `chrome://extensions` → "Errors"
-- [ ] Close the screenshot-to-code tab between capture and generation completing, then capture again: a fresh tab opens and receives the pending capture
+- [ ] Set the keyboard shortcut to "Capture full page" in Options, press it → same result as the toolbar icon; set it to "Start area selection", press it → same result as the automated overlay test
 
-- [ ] **Step 5: Fix anything the checklist surfaces, then commit**
+- [ ] **Step 13: Fix anything Steps 11–12 surface, then commit**
 
 ```bash
 git add -A
-git commit -m "Fix issues found during manual QA of the Chrome extension"
+git commit -m "Add Playwright end-to-end suite for the Chrome extension"
 ```
-
-(Only run this commit if Step 4 required changes — if the checklist passes clean, there is nothing to commit here.)
