@@ -21,6 +21,10 @@ import {
   GenerationRequest,
   registerAssetIds,
 } from "./lib/prompt-history";
+import {
+  buildVariantCompleteMessage,
+  parseCaptureMessage,
+} from "./lib/extensionBridge";
 // import TipLink from "./components/messages/TipLink";
 import { useAppStore } from "./store/app-store";
 import { useProjectStore } from "./store/project-store";
@@ -233,6 +237,21 @@ function App() {
     };
   }, [appTheme]);
 
+  // Extension bridge: content/bridge.ts (extension/src/content/bridge.ts)
+  // posts a "capture" message on this window when it injects a screenshot
+  // taken from the toolbar icon, area selection, shortcut, or context menu.
+  useEffect(() => {
+    const onExtensionMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      const parsed = parseCaptureMessage(event.data);
+      if (parsed === null) return;
+      doCreate([parsed.dataUrl], "image");
+    };
+    window.addEventListener("message", onExtensionMessage);
+    return () => window.removeEventListener("message", onExtensionMessage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const getAssetsById = () => useProjectStore.getState().assetsById;
 
   // Functions
@@ -430,6 +449,10 @@ function App() {
         const currentCode =
           useProjectStore.getState().commits[commit.hash]?.variants[variantIndex]
             ?.code || "";
+        window.postMessage(
+          buildVariantCompleteMessage(variantIndex, currentCode),
+          window.location.origin
+        );
         if (currentCode.trim().length > 0) {
           appendVariantHistoryMessage(
             commit.hash,
