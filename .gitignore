@@ -12,6 +12,10 @@ backend/image_generation/eval_results/*
 # Weird Docker setup related files
 backend/backend/*
 
+# Local-only override for isolated mock-generation test stacks (redirects
+# ports; must never silently apply to a normal `docker compose up`)
+docker-compose.override.yml
+
 # Env vars
 frontend/.env.local
 .env
