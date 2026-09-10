@@ -14,6 +14,7 @@ from config import (
     GEMINI_API_KEY,
     IS_DEBUG_ENABLED,
     IS_PROD,
+    MOCK_CODE_GENERATION,
     NUM_VARIANTS,
     NUM_VARIANTS_VIDEO,
     OPENAI_API_KEY,
@@ -546,6 +547,23 @@ class PostProcessingStage:
         return None
 
 
+def _mock_variant_html(index: int, model: Llm) -> str:
+    return (
+        "<!DOCTYPE html>\n"
+        "<html>\n"
+        "<head><meta charset=\"utf-8\" /><title>Mock generation</title></head>\n"
+        "<body>\n"
+        f'  <div data-testid="mock-generation-marker" data-variant-index="{index}" '
+        f'data-model="{model.value}" style="font-family: sans-serif; padding: 40px;">\n'
+        "    <h1>Snapcraft mock generation output</h1>\n"
+        "    <p>Deterministic fixture returned because MOCK_CODE_GENERATION is on "
+        "&mdash; no real provider was called.</p>\n"
+        "  </div>\n"
+        "</body>\n"
+        "</html>\n"
+    )
+
+
 class AgenticGenerationStage:
     """Handles agent tool-calling generation for each variant."""
 
@@ -616,6 +634,14 @@ class AgenticGenerationStage:
         model: Llm,
         prompt_messages: List[ChatCompletionMessageParam],
     ) -> str:
+        if MOCK_CODE_GENERATION:
+            completion = _mock_variant_html(index, model)
+            await self.send_message("setCode", completion, index, None, None)
+            await self.send_message(
+                "variantComplete", "Variant generation complete", index, None, None
+            )
+            return completion
+
         try:
             async def send_runner_message(
                 type: str,

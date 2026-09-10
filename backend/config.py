@@ -35,3 +35,11 @@ LOCAL_ASSET_BASE_URL = os.environ.get("LOCAL_ASSET_BASE_URL", "http://127.0.0.1:
 # Set to True when running in production (on the hosted version)
 # Used as a feature flag to enable or disable certain features
 IS_PROD = os.environ.get("IS_PROD", False)
+
+# When enabled, each variant skips the real LLM call and returns a fixed,
+# deterministic HTML fixture instead. Lets e2e tests exercise the full
+# websocket/render pipeline for free and instantly, without hitting paid
+# provider APIs. Must never be on outside of test runs.
+MOCK_CODE_GENERATION = os.environ.get(
+    "MOCK_CODE_GENERATION", ""
+).strip().lower() in {"1", "true", "yes", "on"}
